@@ -1,0 +1,1 @@
+type bonuses = { multiplier: number, base: number, extra: number, expire: number};

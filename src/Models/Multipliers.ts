@@ -6,7 +6,16 @@ export const model = (sequelize: Sequelize) => {
             type: TEXT
         },
         multiplier: {
-            type: INTEGER
+            type: INTEGER,
+            defaultValue: 1
+        },
+        base: {
+            type: INTEGER,
+            defaultValue: 1
+        },
+        extra: {
+            type: INTEGER,
+            defaultValue: 0
         }
     }, {timestamps: false})
 }

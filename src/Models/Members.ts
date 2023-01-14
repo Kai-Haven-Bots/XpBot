@@ -8,7 +8,11 @@ export const model = (sequelize:Sequelize) => {
         exp: {
             type: INTEGER
         },
-        messageCount: {
+        level: {
+            type: INTEGER,
+            defaultValue: 1
+        },
+        messages: {
             type: INTEGER
         }
     }, {timestamps: false})
