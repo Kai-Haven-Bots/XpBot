@@ -3,7 +3,8 @@ import {INTEGER, Sequelize, TEXT} from "sequelize";
 export const model = (sequelize: Sequelize) => {
     sequelize.define("multipliers", {
         roleId: {
-            type: TEXT
+            type: TEXT,
+            allowNull: false
         },
         multiplier: {
             type: INTEGER,
@@ -17,5 +18,14 @@ export const model = (sequelize: Sequelize) => {
             type: INTEGER,
             defaultValue: 0
         }
-    }, {timestamps: false})
+    }, {
+        timestamps: false,
+        indexes: [
+            {
+                fields: ['roleId'],
+                unique: true
+            }
+        ]
+
+    })
 }

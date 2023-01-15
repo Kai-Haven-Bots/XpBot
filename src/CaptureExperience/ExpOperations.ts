@@ -1,7 +1,7 @@
 import {sequelize} from "../index";
-import {Collection, Role} from "discord.js";
+import {Client, Collection, Role} from "discord.js";
 
-export const increament = async (userId: string, exp: number) => {
+export const increament = async (userId: string, exp: number, client: Client, guildId: string) => {
     const members = sequelize.model("members");
 
     let memberModel = await members.findOne({
@@ -23,15 +23,33 @@ export const increament = async (userId: string, exp: number) => {
         messages: (previousMessages + 1)
     })
 
-    const level = updated.get("level") as number;
+    let level = updated.get("level") as number;
     const pointsRequired = requiredPoints(level + 1);
     const currentPoints = updated.get("exp") as number;
 
     if(currentPoints >= pointsRequired){
+        level += 1;
         updated.update({
-            level: level + 1,
+            level: level,
             exp: 0
+        }).catch(err => {
+            console.log(err)
         })
+
+        const rewards = sequelize.model("rewards");
+        const reward = await rewards.findOne({
+            where: {
+                level: level
+            }
+        })
+        if(reward === null) return;
+        let guild = await client.guilds.fetch(guildId);
+        guild.members.fetch(userId).then(user => {
+            user.roles.add(reward.get("roleId") as string);
+        }).catch(err => {
+            console.log(err)
+        })
+
     }
 }
 export const calculatePoints = async (rating: number, roles:  Collection<string, Role>, userId: string): Promise<number> => {

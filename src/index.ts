@@ -2,7 +2,6 @@ import {Sequelize} from "sequelize";
 import * as fs from "fs";
 import * as path from "path";
 import {Client, EmbedBuilder, IntentsBitField, Role, TextBasedChannel} from "discord.js";
-import {calculatePoints, increament, rate, requiredPoints} from "./CaptureExperience/ExpOperations";
 import {listen} from "./CaptureExperience/Listener";
 
 require("dotenv")

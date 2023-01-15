@@ -14,7 +14,9 @@ export const listen = async (client: Client) => {
         if(!(difference > 1_000)) return;
 
         givenAt.set(member.id, time)
-         addExp(msg)
+         addExp(msg).catch(err => {
+             console.log(err)
+         })
     })
 }
 
@@ -22,5 +24,8 @@ const addExp = async (msg: Message) => {
     const member = msg.member;
     if(!member) return;
     let exp = await rate(msg.content);
-    increament(member.id, await calculatePoints( exp, member.roles.cache, member.id))
+    increament(member.id, await calculatePoints( exp, member.roles.cache, member.id), msg.client, msg.guildId as string)
+        .catch(err => {
+            console.log(err)
+        })
 }
