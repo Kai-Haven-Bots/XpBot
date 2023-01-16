@@ -3,7 +3,7 @@ import {calculatePoints, FixedSizeMap, increament, rate} from "./ExpOperations";
 
 export const givenAt = new FixedSizeMap<string, number>(100);
 
-export const listen = async (client: Client) => {
+export const captureListener = async (client: Client) => {
     client.on('messageCreate', async (msg) => {
         const member = msg.member;
         if(member === null) return;
@@ -24,8 +24,6 @@ const addExp = async (msg: Message) => {
     const member = msg.member;
     if(!member) return;
     let exp = await rate(msg.content);
-    increament(member.id, await calculatePoints( exp, member.roles.cache, member.id), msg.client, msg.guildId as string)
-        .catch(err => {
-            console.log(err)
-        })
+    await increament(member.id, await calculatePoints( exp, member.roles.cache, member.id), msg.client, msg.guildId as string)
+
 }

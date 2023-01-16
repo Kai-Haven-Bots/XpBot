@@ -2,16 +2,18 @@ import {Sequelize} from "sequelize";
 import * as fs from "fs";
 import * as path from "path";
 import {Client, EmbedBuilder, IntentsBitField, Role, TextBasedChannel} from "discord.js";
-import {listen} from "./CaptureExperience/Listener";
+import {captureListener} from "./CaptureExperience/Listener";
+import {commandsListener} from "./Commands/Listener";
+import {logger} from "sequelize/types/utils/logger";
 
 require("dotenv")
     .config({
         path: path.join(__dirname, ".env")
     })
 
-export const sequelize = new Sequelize({
-    storage: "xp.db",
-    dialect: "sqlite",
+export const sequelize = new Sequelize("exp","root", process.env._DATABASE_PASS,{
+     dialect: "mysql",
+     host: "localhost",
     logging: false
 })
 
@@ -20,30 +22,20 @@ fs.readdirSync(path.join(__dirname, "Models"))
         const model = require(path.join(__dirname, "Models", file))
         model.model(sequelize); 
     })
-sequelize.sync({alter: true}).then(() => {
-    console.log("Models synced")
-})
+sequelize.sync({alter: true})
 
 export const client = new Client({
-    intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent]
+    intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildMembers]
 })
 
-// increament("haha", 100);
 client.once('ready', async () => {
-    console.log("Ready");
-    listen(client)
-    const server = await client.guilds.fetch("818373020816637952");
-    const channel = (await  server.channels.fetch("961677956399394867")) as TextBasedChannel;
-    const embed = new EmbedBuilder()
-        .setDescription("```scss\n" +
-            "\n" +
-            "ㅤRank #5 Level 54;ㅤ\n" +
-            "ㅤ[==========>   ]  75%ㅤ\n" +
-            "ㅤ20k/32.9k exp \n" +
-            "```")
+    console.log("ready");
+    captureListener(client)
+    commandsListener(client)
+})
 
-    // channel.send({embeds: [embed]});
+client.on('messageCreate', (msg) => {
+    if(!msg.content.startsWith("!rank")) return;
 })
-client.login(process.env._TOKEN).then(() => {
-    console.log("Logged in");
-})
+
+client.login(process.env._TOKEN);

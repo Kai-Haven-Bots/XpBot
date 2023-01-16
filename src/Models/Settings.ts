@@ -1,9 +1,9 @@
-import {Sequelize, TEXT} from "sequelize";
+import {CHAR, Sequelize, TEXT} from "sequelize";
 
 export const model = (sequelize: Sequelize) => {
     sequelize.define("settings", {
         key: {
-            type: TEXT,
+            type: CHAR(40),
             allowNull: false
         },
         value: {

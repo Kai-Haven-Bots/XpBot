@@ -1,9 +1,9 @@
-import {INTEGER, Sequelize, TEXT} from "sequelize";
+import {CHAR, INTEGER, Sequelize, TEXT} from "sequelize";
 
 export const model = (sequelize: Sequelize) => {
     sequelize.define("multipliers", {
         roleId: {
-            type: TEXT,
+            type: CHAR(40),
             allowNull: false
         },
         multiplier: {

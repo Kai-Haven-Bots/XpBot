@@ -2,67 +2,59 @@ import {sequelize} from "../index";
 import {Client, Collection, Role} from "discord.js";
 
 export const increament = async (userId: string, exp: number, client: Client, guildId: string) => {
-    const members = sequelize.model("members");
+    await sequelize.transaction(async t => {
+        const members = sequelize.model("members");
 
-    let memberModel = await members.findOne({
-        where: {
-            userId: userId
+        let memberModel = await members.findOne({where: {userId}});
+        if (!memberModel) {
+            memberModel = await members.create({userId, exp: 0, messages: 0});
         }
-    })
-    if (memberModel === null) {
-        memberModel = await members.create({
-            userId: userId,
-            exp: 0,
-            messages: 0
-        })
-    }
-    const previousExp = memberModel.get("exp") as number;
-    const previousMessages = memberModel.get("messages") as number;
-    const updated  = await memberModel.update({
-        exp: (previousExp + exp),
-        messages: (previousMessages + 1)
-    })
 
-    let level = updated.get("level") as number;
-    const pointsRequired = requiredPoints(level + 1);
-    const currentPoints = updated.get("exp") as number;
+        const updated = await memberModel.increment({exp: exp, messages: 1}, {transaction: t});
 
-    if(currentPoints >= pointsRequired){
-        level += 1;
-        updated.update({
-            level: level,
-            exp: 0
-        }).catch(err => {
-            console.log(err)
-        })
+        let level = updated.get("level") as number;
+        let pointsRequired = requiredPoints(level + 1);
+        let currentPoints = updated.get("exp") as number;
+        if (currentPoints >= pointsRequired) {
+            while (currentPoints >= pointsRequired) {
+                console.log({currentPoints, pointsRequired});
+                level += 1;
+                await memberModel.increment({level: 1}, {transaction: t})
+                await memberModel.decrement({exp: pointsRequired}, {transaction: t})
 
-        const rewards = sequelize.model("rewards");
-        const reward = await rewards.findOne({
-            where: {
-                level: level
+                currentPoints -= pointsRequired;
+                pointsRequired = requiredPoints(level + 1);
             }
-        })
-        if(reward === null) return;
-        let guild = await client.guilds.fetch(guildId);
-        guild.members.fetch(userId).then(user => {
-            user.roles.add(reward.get("roleId") as string);
-        }).catch(err => {
-            console.log(err)
-        })
-
-    }
+            const rewards = sequelize.model("rewards");
+            const reward = await rewards.findOne({where: {level}});
+            if (reward) {
+                let guild = await client.guilds.fetch(guildId);
+                guild.members.fetch(userId).then(user => {
+                    user.roles.add(reward.get("roleId") as string);
+                }).catch(err => {
+                    console.log(err)
+                });
+            }
+        }
+        // try{
+        //     await t.commit();
+        // }catch (err){
+        //     console.log("Commit failed! " + err);
+        // }
+    });
 }
-export const calculatePoints = async (rating: number, roles:  Collection<string, Role>, userId: string): Promise<number> => {
+
+export const calculatePoints = async (rating: number, roles: Collection<string, Role>, userId: string): Promise<number> => {
     let multiplyBy = 0;
     let basePoint = 1;
     let extraPoint = 0;
 
     let cached = calculateCache.get(userId);
-    if(cached && calculateCacheValidator(cached)){
+    if (cached && calculateCacheValidator(cached)) {
         multiplyBy = cached?.multiplier;
         basePoint = cached.base;
         extraPoint = cached.extra;
-    }else{
+    } else {
         const multipliers = sequelize.model("multipliers")
         for (const role of roles) {
 
@@ -71,17 +63,17 @@ export const calculatePoints = async (rating: number, roles:  Collection<string,
                     roleId: role[0]
                 }
             })
-            if(multiplier !== null){
+            if (multiplier !== null) {
                 const roleMultiplyBy = multiplier.get("multiplier") as number
                 const roleBase = multiplier.get("base") as number;
                 const roleExtra = multiplier.get("extra") as number;
 
-                if(roleBase > basePoint) basePoint = roleBase;
-                if(roleExtra > extraPoint) extraPoint = roleExtra;
-                if(roleMultiplyBy > multiplyBy) multiplyBy = roleMultiplyBy;
+                if (roleBase > basePoint) basePoint = roleBase;
+                if (roleExtra > extraPoint) extraPoint = roleExtra;
+                if (roleMultiplyBy > multiplyBy) multiplyBy = roleMultiplyBy;
             }
         }
-        if(multiplyBy < 1) multiplyBy = 1;
+        if (multiplyBy < 1) multiplyBy = 1;
         calculateCache.set(userId, {
             expire: (new Date().getTime()) + 60_000,
             multiplier: multiplyBy,
@@ -93,12 +85,12 @@ export const calculatePoints = async (rating: number, roles:  Collection<string,
 
     let points;
     points = (rating * multiplyBy) + extraPoint
-    if(basePoint > points) points = basePoint;
+    if (basePoint > points) points = basePoint;
     return points;
 }
 
 export const rate = async (message: string): Promise<number> => {
-    const returnData = { wordCount: 0, emojiCount: 0, whWordCount: 0, mentionCount: 0 };
+    const returnData = {wordCount: 0, emojiCount: 0, whWordCount: 0, mentionCount: 0};
     message = message.toLowerCase();
     const args = message.split(" ");
     args.forEach((word) => {
@@ -121,11 +113,11 @@ export const rate = async (message: string): Promise<number> => {
         returnData.mentionCount = 1;
     const eqr = returnData.wordCount + returnData.emojiCount + returnData.whWordCount + returnData.mentionCount;
     let points = 0;
-    if(eqr <= 4){
+    if (eqr <= 4) {
         points = 1;
-    }else if(eqr <= 6.9){
+    } else if (eqr <= 6.9) {
         points = 3;
-    }else if(eqr >= 7){
+    } else if (eqr >= 7) {
         points = 5;
     }
     return points;
@@ -139,15 +131,15 @@ const containsEmoji = (word: string) => {
 
 export const requiredPoints = (level: number): number => {
     let result;
-    if(level > 10){
+    if (level > 10) {
         result = 1000
-    }else{
+    } else {
         result = (level - 1) * 100
     }
     return result;
 }
 
-export class FixedSizeMap<K, V>{
+export class FixedSizeMap<K, V> {
     private readonly maxSize: number;
     private map: Map<K, V>;
     private keys: K[];
@@ -181,7 +173,8 @@ export class FixedSizeMap<K, V>{
         this.map.delete(oldestKey as K);
     }
 }
+
 export const calculateCache = new FixedSizeMap<string, bonuses>(100);
-const calculateCacheValidator = (cache:bonuses): boolean => {
+const calculateCacheValidator = (cache: bonuses): boolean => {
     return (cache.expire > new Date().getTime())
 }
