@@ -24,12 +24,15 @@ export const createExpCard = async ( sequelize: Sequelize, msgMember: GuildMembe
        }
    })
     const rank = all.length;
-    console.log(rank)
     let name = msgMember.user.username + "#" + msgMember.user.discriminator ;
     let level =  member.get("level") as number;
     let currentExp = member.get("exp") as number;
     let requiredExp = requiredPoints(level + 1);
     let percentage = (currentExp/requiredExp)*100;
+
+    if(currentExp>=requiredExp)
+        console.log({userId, percentage, currentExp, requiredExp});
+
     let count = Math.floor(percentage/10);
     if(count < 0) count = 0;
     let progressBar = "[" + "=".repeat(count) + ">" + " ".repeat(10-count) + "]";

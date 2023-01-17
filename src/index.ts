@@ -1,10 +1,12 @@
 import {Sequelize} from "sequelize";
 import * as fs from "fs";
 import * as path from "path";
-import {Client, EmbedBuilder, IntentsBitField, Role, TextBasedChannel} from "discord.js";
+import {Client, IntentsBitField} from "discord.js";
 import {captureListener} from "./CaptureExperience/Listener";
 import {commandsListener} from "./Commands/Listener";
-import {logger} from "sequelize/types/utils/logger";
+import {raffleCommandListener} from "./Raffle/Commands/Listener";
+import {syncRaffles} from "./Raffle/Commands/RaffleCommandOperations";
+import {getTasks} from "node-cron";
 
 require("dotenv")
     .config({
@@ -22,7 +24,9 @@ fs.readdirSync(path.join(__dirname, "Models"))
         const model = require(path.join(__dirname, "Models", file))
         model.model(sequelize); 
     })
-sequelize.sync({alter: true})
+sequelize.sync({alter: true}).then(async () => {
+    await syncRaffles(sequelize);
+})
 
 export const client = new Client({
     intents: [IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.GuildMembers]
@@ -32,10 +36,6 @@ client.once('ready', async () => {
     console.log("ready");
     captureListener(client)
     commandsListener(client)
+    raffleCommandListener(client)
 })
-
-client.on('messageCreate', (msg) => {
-    if(!msg.content.startsWith("!rank")) return;
-})
-
 client.login(process.env._TOKEN);

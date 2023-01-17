@@ -1,7 +1,7 @@
 import {Client, EmbedBuilder, PermissionsBitField} from "discord.js";
 import {createExpCard, createLeaderboard} from "./CommandOperations";
 import {sequelize} from "../index";
-import {increament} from "../CaptureExperience/ExpOperations";
+import {increament, locked} from "../CaptureExperience/ExpOperations";
 
 export const commandsListener = async (client: Client) => {
     client.on('messageCreate', async (msg) => {
@@ -16,13 +16,19 @@ export const commandsListener = async (client: Client) => {
                    let levelMember = null;
                    if(args[1] !== undefined){
                        try{
-                           levelMember = await msg.guild?.members.fetch(args[1].replace("/[<@>]/g", ""));
+                           levelMember = await msg.guild?.members.fetch(args[1].replace("<", "").replace("@", "").replace(">", ""));
                        }catch (err){
                            console.log(err)
                            levelMember = msg.member;
                        }
                    }else{
                        levelMember = msg.member;
+                   }
+                   if(locked.has(levelMember?.id as string)) {
+                       msg.react("⏰").catch(err => {});
+                       msg.react("💤").catch(err => {});
+                       msg.react("🌙").catch(err => {});
+                       return;
                    }
                    if(levelMember)
                    createExpCard(sequelize, levelMember ).then( card => {
@@ -37,11 +43,12 @@ export const commandsListener = async (client: Client) => {
                        msg.react("⛔").catch(err => {});
                        return;
                    }
-                   const id = args[1].replace("/[<@!&>]/g", "")
+                   const id = args[1].replace("<", "").replace("@", "").replace(">", "").replace("&", "");
                    if(!isNumeric(id)){
                        msg.react("⛔").catch(err => {});
                        return;
                    }
+
                    let amount: number;
 
                    if(!isNumeric(args[2])){
@@ -51,7 +58,6 @@ export const commandsListener = async (client: Client) => {
                    amount = Number(args[2]);
 
                    if(!id) return;
-
                    try{
                       await client.users.fetch(id);
                        try{
@@ -67,7 +73,7 @@ export const commandsListener = async (client: Client) => {
                            let members = await msg.guild?.members.fetch();
                            if(!members) return;
                            for (const member of members.filter(mem => mem.roles.cache.has(id))) {
-                             await increament(member[0], amount, client, msg.guildId as string)
+                                await increament(member[0], amount, client, msg.guildId as string)
                            }
                            msg.react("✅").catch(err => {});
                        }catch (err){

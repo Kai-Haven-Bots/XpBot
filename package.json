@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/node-cron": "^3.0.7",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "mysql2": "^3.0.1",
+    "node-cron": "^3.0.2",
     "sequelize": "^6.28.0"
   }
 }

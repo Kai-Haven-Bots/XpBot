@@ -1,4 +1,4 @@
-import {CHAR, INTEGER, Sequelize, TEXT} from "sequelize";
+import {BIGINT, CHAR, INTEGER, Sequelize} from "sequelize";
 
 export const model = (sequelize:Sequelize) => {
     sequelize.define("members", {
@@ -16,6 +16,10 @@ export const model = (sequelize:Sequelize) => {
         },
         messages: {
             type: INTEGER,
+            defaultValue: 0
+        },
+        lastMessageAt: {
+            type: BIGINT,
             defaultValue: 0
         }
     }, {

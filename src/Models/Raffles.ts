@@ -10,18 +10,22 @@ export const model = (sequelize: Sequelize) => {
          type: CHAR(30),
          allowNull: false
       },
+      channelId: {
+         type: CHAR(50),
+         allowNull: false
+      },
       messageId: {
          type: CHAR(50),
          allowNull: false
       },
-      runEvery: {
-         type: INTEGER,
+      every: {
+         type: CHAR(6),
          allowNull: false
-      }
+      },
    }, {
       timestamps: false,
       indexes: [
-
+         {fields: ["name"], unique: true}
       ]
    })
 }

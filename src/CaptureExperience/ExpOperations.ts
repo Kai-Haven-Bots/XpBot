@@ -1,49 +1,58 @@
 import {sequelize} from "../index";
-import {Client, Collection, Role} from "discord.js";
+import {Client, Collection, resolveColor, Role} from "discord.js";
+export const locked = new Map<string, boolean>();
 
 export const increament = async (userId: string, exp: number, client: Client, guildId: string) => {
     await sequelize.transaction(async t => {
+        locked.set(userId, true);
         const members = sequelize.model("members");
-
         let memberModel = await members.findOne({where: {userId}});
         if (!memberModel) {
             memberModel = await members.create({userId, exp: 0, messages: 0});
         }
+        await memberModel.increment({exp: exp, messages: 1}, {transaction: t});
 
-        const updated = await memberModel.increment({exp: exp, messages: 1}, {transaction: t});
+        memberModel = await members.findOne({where: {userId}});
+        if(memberModel === null) return;
 
-        let level = updated.get("level") as number;
+        let currentPoints = memberModel.get("exp") as number;
+        let level = memberModel.get("level") as number;
         let pointsRequired = requiredPoints(level + 1);
-        let currentPoints = updated.get("exp") as number;
-        if (currentPoints >= pointsRequired) {
-            while (currentPoints >= pointsRequired) {
-                console.log({currentPoints, pointsRequired});
-                level += 1;
-                await memberModel.increment({level: 1}, {transaction: t})
-                await memberModel.decrement({exp: pointsRequired}, {transaction: t})
 
-                currentPoints -= pointsRequired;
-                pointsRequired = requiredPoints(level + 1);
-            }
-            const rewards = sequelize.model("rewards");
+        const rewards = sequelize.model("rewards");
+
+        while (currentPoints >= pointsRequired) {
+            currentPoints -= pointsRequired;
+            level += 1;
+            pointsRequired = requiredPoints(level + 1);
+
+            await memberModel.increment("level", {by: 1, transaction: t});
+            await memberModel.decrement("exp", {by: pointsRequired, transaction: t});
+
             const reward = await rewards.findOne({where: {level}});
             if (reward) {
-                let guild = await client.guilds.fetch(guildId);
-                guild.members.fetch(userId).then(user => {
+                let guild;
+                try {
+                    guild = await client.guilds.fetch(guildId);
+                } catch (err) {
+                    console.log("Error fetching guild: ", err);
+                    return;
+                }
+                const user = await guild.members.fetch(userId);
+                if (user) {
                     user.roles.add(reward.get("roleId") as string);
-                }).catch(err => {
-                    console.log(err)
-                });
+                } else {
+                    console.log("Error: User not found in guild");
+                }
             }
         }
-        // try{
-        //     await t.commit();
-        // }catch (err){
-        //     console.log("Commit failed! " + err);
-        // }
+        locked.delete(userId);
     });
 }
 
+export const cleanIncrement = (userId: string, amount: number) => {
+
+}
 export const calculatePoints = async (rating: number, roles: Collection<string, Role>, userId: string): Promise<number> => {
     let multiplyBy = 0;
     let basePoint = 1;
@@ -57,7 +66,6 @@ export const calculatePoints = async (rating: number, roles: Collection<string, 
     } else {
         const multipliers = sequelize.model("multipliers")
         for (const role of roles) {
-
             const multiplier = await multipliers.findOne({
                 where: {
                     roleId: role[0]
