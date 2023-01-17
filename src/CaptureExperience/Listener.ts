@@ -7,23 +7,27 @@ export const givenAt = new FixedSizeMap<string, number>(100);
 
 export const captureListener = async (client: Client) => {
     client.on('messageCreate', async (msg) => {
-        const member = msg.member;
-        if(member === null) return;
-        if(msg.channel.isDMBased()) return;
-        if(msg.author.bot) return;
+        try{
+            const member = msg.member;
+            if(member === null) return;
+            if(msg.channel.isDMBased()) return;
+            if(msg.author.bot) return;
 
-        if(!givenAt.has(member.id)) givenAt.set(member.id, 0);
-        const time = (new Date()).getTime();
-        const difference = time - (givenAt.get(member.id) as number);
-        if(!(difference > 2_000)) return;
-        if(locked.has(member.id)) return;
+            if(!givenAt.has(member.id)) givenAt.set(member.id, 0);
+            const time = (new Date()).getTime();
+            const difference = time - (givenAt.get(member.id) as number);
+            if(!(difference > 2_000)) return;
+            if(locked.has(member.id)) return;
 
-        givenAt.set(member.id, time)
-         addExp(msg).catch(err => {
-             console.log(err)
-         })
-        setLastMessageAt(msg.author.id, sequelize).catch(err => {
-        })
+            givenAt.set(member.id, time)
+            addExp(msg).catch(err => {
+                console.log(err)
+            })
+            setLastMessageAt(msg.author.id, sequelize).catch(err => {
+            })
+        }catch (err){
+            console.log(err)
+        }
     })
 }
 
