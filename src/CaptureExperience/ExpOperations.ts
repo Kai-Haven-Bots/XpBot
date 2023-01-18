@@ -1,55 +1,60 @@
 import {client, sequelize} from "../index";
 import {Client, Collection, Role} from "discord.js";
 import {setLastMessageAt} from "../Raffle/RaffleOperations";
+
 export const locked = new Map<string, boolean>();
 
 export const increament = async (userId: string, amount: number) => {
-    await sequelize.transaction(async t => {
-        //adding lock so no other process can make change on our user
-        locked.set(userId, true);
+    try {
+        await sequelize.transaction(async t => {
+            //adding lock so no other process can make change on our user
+            locked.set(userId, true);
 
-        const members = sequelize.model("members");
-        //retrieving the member from database
-        const [member, created] = await members.findOrCreate({
-            where: {userId: userId}
+            const members = sequelize.model("members");
+            //retrieving the member from database
+            const [member, created] = await members.findOrCreate({
+                where: {userId: userId}
+            })
+            //getting their initial stats
+            let level = created ? 1 : member.get("level") as number;
+            let exp = created ? 0 : member.get("exp") as number;
+
+            //variables to find out later what to increment
+            const initialExp = exp;
+            const initialLevel = level;
+
+            //calculating their required stats to level up
+            let requiredExp = requiredPoints(level + 1);
+            let currentExp = exp + amount;
+
+
+            while (currentExp >= requiredExp) {
+                level++;
+                //we deduct the current exp since we added +1 level for that much exp
+                currentExp -= requiredExp;
+                //getting the next level requirement
+                requiredExp = requiredPoints(level + 1)
+
+                //giving them level rewards
+                giveReward(userId, level)
+            }
+
+            //calculating how much to increment
+            const incrementExp = currentExp - initialExp;
+            const incrementLevel = level - initialLevel;
+
+            await member.increment('exp', {by: incrementExp, transaction: t});
+            await member.increment('level', {by: incrementLevel, transaction: t});
+
+            setLastMessageAt(userId, sequelize)
+
+            //removing lock
+            locked.delete(userId);
+
         })
-        //getting their initial stats
-        let level = created ? 1 : member.get("level") as number;
-        let exp = created ? 0 : member.get("exp") as number;
-
-        //variables to find out later what to increment
-        const initialExp = exp;
-        const initialLevel = level;
-
-        //calculating their required stats to level up
-        let requiredExp = requiredPoints(level + 1);
-        let currentExp = exp + amount;
-
-
-        while(currentExp >= requiredExp){
-            level++;
-            //we deduct the current exp since we added +1 level for that much exp
-            currentExp -= requiredExp;
-            //getting the next level requirement
-            requiredExp = requiredPoints(level + 1)
-
-            //giving them level rewards
-            giveReward(userId, level)
-        }
-
-        //calculating how much to increment
-        const incrementExp = currentExp - initialExp;
-        const incrementLevel = level - initialLevel;
-
-        await member.increment('exp', {by: incrementExp, transaction: t});
-        await member.increment('level', {by: incrementLevel, transaction: t});
-
-        setLastMessageAt(userId, sequelize)
-
-        //removing lock
-        locked.delete(userId);
-
-    })
+    } catch (err) {
+        console.log(err);
+    }
 }
 
 

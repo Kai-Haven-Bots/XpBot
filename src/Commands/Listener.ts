@@ -38,7 +38,7 @@ export const commandsListener = async (client: Client) => {
                        msg.reply({embeds: [embed], allowedMentions: {repliedUser: false}});
                    })
                    break;
-               case "!addpoints":
+               case "!expadd":
                    msg.react("🎯").catch(err => {});
                    if(!msg.member?.permissions.has(PermissionsBitField.Flags.Administrator)){
                        msg.react("⛔").catch(err => {});
@@ -99,7 +99,22 @@ export const commandsListener = async (client: Client) => {
                     }else{
                         page = Number(pageString);
                     }
-                    msg.reply({embeds: [await createLeaderboard(sequelize, page)], allowedMentions: {repliedUser: false}})
+                    await msg.reply({embeds: [await createLeaderboard(sequelize, page)], allowedMentions: {repliedUser: false}})
+                   break
+               case "!help":
+                   let embed = new EmbedBuilder();
+                   if(msg.member?.permissions.has(PermissionsBitField.Flags.Administrator)){
+                       embed.setDescription("``` \n" +
+                           "• !rank or !exp: View your own experience points (exp) statistics.\n" +
+                           "• !levels or !leaderboard: View the leaderboard of the highest levels in the server. \n" +
+                           "• !addExp: Add exp (points) to someone's stats```")
+                   }else{
+                       embed.setDescription("``` \n" +
+                           "• !rank or !exp: View your own experience points (exp) statistics.\n" +
+                           "• !levels or !leaderboard: View the leaderboard of the highest levels in the server. ```")
+                   }
+                   embed.setTitle("Commands")
+                   await msg.reply({embeds: [embed], allowedMentions: {repliedUser: false}})
            }
        }catch (err) {
            msg.react("⛔").catch(err => {});
@@ -115,8 +130,5 @@ async function incrementWithLock(id: string, amount: number, client: Client, gui
         // Wait for the next iteration of the event loop
         await new Promise(resolve => setTimeout(resolve, 0));
     }
-
-    locked.set(id, true);
     await increament(id, amount);
-    locked.delete(id);
 }
