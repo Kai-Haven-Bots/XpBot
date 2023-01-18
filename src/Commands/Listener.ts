@@ -30,6 +30,7 @@ export const commandsListener = async (client: Client) => {
                        msg.react("🌙").catch(err => {});
                        return;
                    }
+
                    if(levelMember)
                    createExpCard(sequelize, levelMember ).then( card => {
                        const embed = new EmbedBuilder()
@@ -49,6 +50,12 @@ export const commandsListener = async (client: Client) => {
                        return;
                    }
 
+                   if(locked.has(id as string)) {
+                       msg.react("⏰").catch(err => {});
+                       msg.react("💤").catch(err => {});
+                       msg.react("🌙").catch(err => {});
+                   }
+
                    let amount: number;
 
                    if(!isNumeric(args[2])){
@@ -61,7 +68,7 @@ export const commandsListener = async (client: Client) => {
                    try{
                       await client.users.fetch(id);
                        try{
-                           await increament(id, amount, client, msg.guildId as string)
+                           await incrementWithLock(id, amount, client, "859736561830592522");
                            msg.react("✅").catch(err => {});
                        }catch (err){
                            msg.react("⛔").catch(err => {});
@@ -73,7 +80,7 @@ export const commandsListener = async (client: Client) => {
                            let members = await msg.guild?.members.fetch();
                            if(!members) return;
                            for (const member of members.filter(mem => mem.roles.cache.has(id))) {
-                                await increament(member[0], amount, client, msg.guildId as string)
+                               await incrementWithLock(id, amount, client, "859736561830592522");
                            }
                            msg.react("✅").catch(err => {});
                        }catch (err){
@@ -102,4 +109,14 @@ export const commandsListener = async (client: Client) => {
 
 function isNumeric(str: string) {
     return /^\d+$/.test(str);
+}
+async function incrementWithLock(id: string, amount: number, client: Client, guildId: string) {
+    while (locked.has(id)) {
+        // Wait for the next iteration of the event loop
+        await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    locked.set(id, true);
+    await increament(id, amount);
+    locked.delete(id);
 }

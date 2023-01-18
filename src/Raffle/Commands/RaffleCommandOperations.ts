@@ -96,6 +96,8 @@ export const raffleOperation  = async (name: string, starterUserId: string, chan
             message: https://discord.com/channels/${msg.guildId}/${channelId}/${messageId}
         **`)
     await staffDm.send({embeds: [notification]});
+    const winLogs = (await client.channels.fetch("1065183875556446258")) as GuildTextBasedChannel;
+    await winLogs.send({embeds: [notification]});
 
     const user = await client.users.fetch(winner as string);
     const userDm = await user.createDM();

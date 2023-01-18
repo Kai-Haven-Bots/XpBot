@@ -1,6 +1,7 @@
 import {Op, Sequelize} from "sequelize";
 import {EmbedBuilder, Guild, GuildMember} from "discord.js";
-import {requiredPoints} from "../CaptureExperience/ExpOperations";
+import {increament, requiredPoints} from "../CaptureExperience/ExpOperations";
+import {client} from "../index";
 
 export const createExpCard = async ( sequelize: Sequelize, msgMember: GuildMember): Promise<string> => {
     const userId = msgMember.user.id;
@@ -30,8 +31,10 @@ export const createExpCard = async ( sequelize: Sequelize, msgMember: GuildMembe
     let requiredExp = requiredPoints(level + 1);
     let percentage = (currentExp/requiredExp)*100;
 
-    if(currentExp>=requiredExp)
+    if(currentExp>=requiredExp){
         console.log({userId, percentage, currentExp, requiredExp});
+        return "Try again";
+    }
 
     let count = Math.floor(percentage/10);
     if(count < 0) count = 0;

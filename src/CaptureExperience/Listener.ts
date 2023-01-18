@@ -2,6 +2,7 @@ import {Client, Message} from "discord.js";
 import {calculatePoints, FixedSizeMap, increament, locked, rate} from "./ExpOperations";
 import {setLastMessageAt} from "../Raffle/RaffleOperations";
 import {sequelize} from "../index";
+import {useInflection} from "sequelize";
 
 export const givenAt = new FixedSizeMap<string, number>(100);
 
@@ -17,15 +18,13 @@ export const captureListener = async (client: Client) => {
             const time = (new Date()).getTime();
             const difference = time - (givenAt.get(member.id) as number);
             if(!(difference > 2_000)) return;
+
             if(locked.has(member.id)) return;
 
             givenAt.set(member.id, time)
-            addExp(msg).catch(err => {
-                console.log(err)
-            })
-            setLastMessageAt(msg.author.id, sequelize).catch(err => {
-            })
+            await addExp(msg)
         }catch (err){
+            console.log("Add exp error")
             console.log(err)
         }
     })
@@ -35,6 +34,5 @@ const addExp = async (msg: Message) => {
     const member = msg.member;
     if(!member) return;
     let exp = await rate(msg.content);
-    await increament(member.id, await calculatePoints( exp, member.roles.cache, member.id), msg.client, msg.guildId as string)
-
+    await increament(member.id, await calculatePoints( exp, member.roles.cache, member.id))
 }

@@ -1,57 +1,69 @@
-import {sequelize} from "../index";
-import {Client, Collection, resolveColor, Role} from "discord.js";
+import {client, sequelize} from "../index";
+import {Client, Collection, Role} from "discord.js";
+import {setLastMessageAt} from "../Raffle/RaffleOperations";
 export const locked = new Map<string, boolean>();
 
-export const increament = async (userId: string, exp: number, client: Client, guildId: string) => {
+export const increament = async (userId: string, amount: number) => {
     await sequelize.transaction(async t => {
+        //adding lock so no other process can make change on our user
         locked.set(userId, true);
+
         const members = sequelize.model("members");
-        let memberModel = await members.findOne({where: {userId}});
-        if (!memberModel) {
-            memberModel = await members.create({userId, exp: 0, messages: 0});
+        //retrieving the member from database
+        const [member, created] = await members.findOrCreate({
+            where: {userId: userId}
+        })
+        //getting their initial stats
+        let level = created ? 1 : member.get("level") as number;
+        let exp = created ? 0 : member.get("exp") as number;
+
+        //variables to find out later what to increment
+        const initialExp = exp;
+        const initialLevel = level;
+
+        //calculating their required stats to level up
+        let requiredExp = requiredPoints(level + 1);
+        let currentExp = exp + amount;
+
+
+        while(currentExp >= requiredExp){
+            level++;
+            //we deduct the current exp since we added +1 level for that much exp
+            currentExp -= requiredExp;
+            //getting the next level requirement
+            requiredExp = requiredPoints(level + 1)
+
+            //giving them level rewards
+            giveReward(userId, level)
         }
-        await memberModel.increment({exp: exp, messages: 1}, {transaction: t});
 
-        memberModel = await members.findOne({where: {userId}});
-        if(memberModel === null) return;
+        //calculating how much to increment
+        const incrementExp = currentExp - initialExp;
+        const incrementLevel = level - initialLevel;
 
-        let currentPoints = memberModel.get("exp") as number;
-        let level = memberModel.get("level") as number;
-        let pointsRequired = requiredPoints(level + 1);
+        await member.increment('exp', {by: incrementExp, transaction: t});
+        await member.increment('level', {by: incrementLevel, transaction: t});
 
-        const rewards = sequelize.model("rewards");
+        setLastMessageAt(userId, sequelize)
 
-        while (currentPoints >= pointsRequired) {
-            currentPoints -= pointsRequired;
-            level += 1;
-            pointsRequired = requiredPoints(level + 1);
-
-            await memberModel.increment("level", {by: 1, transaction: t});
-            await memberModel.decrement("exp", {by: pointsRequired, transaction: t});
-
-            const reward = await rewards.findOne({where: {level}});
-            if (reward) {
-                let guild;
-                try {
-                    guild = await client.guilds.fetch(guildId);
-                } catch (err) {
-                    console.log("Error fetching guild: ", err);
-                    return;
-                }
-                const user = await guild.members.fetch(userId);
-                if (user) {
-                    user.roles.add(reward.get("roleId") as string);
-                } else {
-                    console.log("Error: User not found in guild");
-                }
-            }
-        }
+        //removing lock
         locked.delete(userId);
-    });
+
+    })
 }
 
-export const cleanIncrement = (userId: string, amount: number) => {
 
+const giveReward = async (userId: string, level: number) => {
+    const rewards = sequelize.model("rewards");
+    const reward = await rewards.findOne({where: {level}});
+    if (reward) {
+        let guild = await client.guilds.fetch("859736561830592522");
+        guild.members.fetch(userId).then(user => {
+            user.roles.add(reward.get("roleId") as string);
+        }).catch(err => {
+            console.log(err)
+        });
+    }
 }
 export const calculatePoints = async (rating: number, roles: Collection<string, Role>, userId: string): Promise<number> => {
     let multiplyBy = 0;
