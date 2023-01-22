@@ -1,6 +1,7 @@
 import {client, sequelize} from "../index";
 import {Client, Collection, Role} from "discord.js";
 import {setLastMessageAt} from "../Raffle/RaffleOperations";
+import {Op, where} from "sequelize";
 
 export const locked = new Map<string, boolean>();
 
@@ -60,14 +61,23 @@ export const increament = async (userId: string, amount: number) => {
 
 const giveReward = async (userId: string, level: number) => {
     const rewards = sequelize.model("rewards");
+
+
     const reward = await rewards.findOne({where: {level}});
     if (reward) {
-        let guild = await client.guilds.fetch("859736561830592522");
-        guild.members.fetch(userId).then(user => {
-            user.roles.add(reward.get("roleId") as string);
-        }).catch(err => {
-            console.log(err)
+
+        const all = await rewards.findAll({
         });
+
+
+        let guild = await client.guilds.fetch("859736561830592522");
+        const member = await guild.members.fetch(userId);
+
+
+        for(let previous of all){
+            await member.roles.remove(previous.get("roleId") as string);
+        }
+        await member.roles.add(reward.get("roleId") as string)
     }
 }
 export const calculatePoints = async (rating: number, roles: Collection<string, Role>, userId: string): Promise<number> => {

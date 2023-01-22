@@ -38,7 +38,7 @@ export const commandsListener = async (client: Client) => {
                        msg.reply({embeds: [embed], allowedMentions: {repliedUser: false}});
                    })
                    break;
-               case "!expadd":
+               case "!addexp":
                    msg.react("🎯").catch(err => {});
                    if(!msg.member?.permissions.has(PermissionsBitField.Flags.Administrator)){
                        msg.react("⛔").catch(err => {});
