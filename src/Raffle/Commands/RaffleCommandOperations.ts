@@ -2,7 +2,7 @@ import {Sequelize} from "sequelize";
 import cron, {getTasks, schedule} from 'node-cron';
 import {convertToCronFormat, pickWinner} from "../RaffleOperations";
 import {client, sequelize} from "../../index";
-import {EmbedBuilder, Guild, GuildChannel, GuildTextBasedChannel, User} from "discord.js";
+import {EmbedBuilder, GuildTextBasedChannel, User} from "discord.js";
 
 export const createRaffle = async (name: string, starterUserId: string, channelId: string, messageId: string, every: "weekly" | "daily", sequelize: Sequelize) => {
    const raffles = sequelize.model("raffles") ;
@@ -71,11 +71,12 @@ export const raffleOperation  = async (name: string, starterUserId: string, chan
 
     const embed = new EmbedBuilder()
         .setTitle("Congratulations to the winner! 🎉🎊")
-        .setDescription(`**We are thrilled to announce that the <@${winner}> have won the raffle. We hope you enjoy your prize! :gift:**`)
+        .setDescription(`**We are thrilled to announce that <@${winner}> have won our RANDOM daily raffle. We hope you enjoy your prize! :gift:**`)
+
     let channel = await client.channels.fetch(channelId) as GuildTextBasedChannel;
     const msg = await channel.messages.fetch(messageId);
 
-    let thread ;
+    let thread;
     if(msg.hasThread){
         thread = msg.thread
     }else{
@@ -87,16 +88,16 @@ export const raffleOperation  = async (name: string, starterUserId: string, chan
 
     const staff = await client.users.fetch(starterUserId);
     const staffDm  = await staff.createDM()
+
     const notification = new EmbedBuilder()
         .setTitle("Raffle winner! 🥳")
         .setDescription(`**
             user: <@${winner}> 
-            raffle: ${name},
-            channel: <#${channelId}>,
-            message: https://discord.com/channels/${msg.guildId}/${channelId}/${messageId}
+            raffle: [${name}](https://discord.com/channels/${msg.guildId}/${channelId}/${messageId}) 
         **`)
+
     await staffDm.send({embeds: [notification]});
-    const winLogs = (await client.channels.fetch("1065183875556446258")) as GuildTextBasedChannel;
+    const winLogs = (await client.channels.fetch("1069197331481772052")) as GuildTextBasedChannel;
     await winLogs.send({embeds: [notification]});
 
     const user = await client.users.fetch(winner as string);
@@ -104,8 +105,7 @@ export const raffleOperation  = async (name: string, starterUserId: string, chan
 
     const userBed = new EmbedBuilder()
         .setTitle("Congratulations🎊")
-        .setDescription(`**Congratulations on winning the daily raffle! Please contact <@${starterUserId}> or dm any online admin and your prize will be processed within 72 hours! 🎉
-To know more please proceed to <#${channelId}> or https://discord.com/channels/${msg.guildId}/${channelId}/${messageId}**`)
+        .setDescription(`**Congratulations on winning the daily raffle! Please contact <@${starterUserId}> or dm any online admin and your prize will be processed within 72 hours! 🎉 raffle: [${name}](https://discord.com/channels/${msg.guildId}/${channelId}/${messageId})**`)
         .setColor("#FFFF00");
     userDm.send({
         embeds: [userBed]

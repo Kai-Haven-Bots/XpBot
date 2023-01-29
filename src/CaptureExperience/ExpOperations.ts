@@ -28,6 +28,9 @@ export const increament = async (userId: string, amount: number) => {
             let requiredExp = requiredPoints(level + 1);
             let currentExp = exp + amount;
 
+            if(level === 1 && exp === 0){
+                giveReward(userId, level);
+            }
 
             while (currentExp >= requiredExp) {
                 level++;
@@ -68,7 +71,6 @@ const giveReward = async (userId: string, level: number) => {
 
         const all = await rewards.findAll({
         });
-
 
         let guild = await client.guilds.fetch("859736561830592522");
         const member = await guild.members.fetch(userId);
