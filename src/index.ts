@@ -26,7 +26,9 @@ fs.readdirSync(path.join(__dirname, "Models"))
     })
 sequelize.sync({alter: true}).then(async () => {
     // importLevels()
-    await syncRaffles(sequelize);
+    
+    //disabling raffle
+    // await syncRaffles(sequelize);
 })
 
 export const client = new Client({
@@ -37,7 +39,8 @@ client.once('ready', async () => {
     console.log("ready");
     captureListener(client)
     commandsListener(client)
-    raffleCommandListener(client)
+    //disabling raffle
+    // raffleCommandListener(client)
 })
 
 const importLevels = async () => {

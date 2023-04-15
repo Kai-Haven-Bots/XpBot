@@ -55,8 +55,8 @@ export async function setLastMessageAt(userId: string, sequelize: Sequelize): Pr
 
 export function convertToCronFormat(every: "daily" | "weekly"): string {
    switch (every){
-       case "daily": return "0 23 * * *";
-       case "weekly": return "0 23 * * 6";
+       case "daily": return "0 0 * * *";
+       case "weekly": return "0 0 * * 6";
    }
 }
 

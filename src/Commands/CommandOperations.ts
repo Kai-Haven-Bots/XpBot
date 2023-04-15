@@ -77,7 +77,7 @@ export const createLeaderboard = async (sequelize: Sequelize, page: number): Pro
     const embed = new EmbedBuilder()
         .setTitle("⚔️ Leaderboard ⚔️")
         .setColor('#FFFFFF')
-        .setDescription(leaderboard)
+        .setDescription("under maintenance ⛔")
         .setFooter({text: `page ${page} • !levels [page]`});
     return embed;
 };
