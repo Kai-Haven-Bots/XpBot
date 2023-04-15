@@ -43,6 +43,14 @@ client.once('ready', async () => {
     // raffleCommandListener(client)
 })
 
+client.on('guildMemberAdd', async member => {
+    try{
+        await member.roles.add('924834841890009188', "Auto roles, kaibear")
+        console.log("Gave autoroles to ", member.user.username);
+    }catch(err){
+        console.log("couldn't give autoroles to ", member.user.username);
+    }
+})
 const importLevels = async () => {
     let players:mee6Player[] = [];
     let i = 102;
