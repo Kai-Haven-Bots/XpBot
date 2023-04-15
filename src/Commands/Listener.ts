@@ -28,6 +28,7 @@ export const commandsListener = async (client: Client) => {
                        msg.react("⏰").catch(err => {});
                        msg.react("💤").catch(err => {});
                        msg.react("🌙").catch(err => {});
+                       process.exit(1);
                        return;
                    }
 
