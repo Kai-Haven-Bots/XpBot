@@ -54,15 +54,16 @@ export const createExpCard = async ( sequelize: Sequelize, msgMember: GuildMembe
 export const createLeaderboard = async (sequelize: Sequelize, page: number): Promise<EmbedBuilder> => {
     const members = await sequelize.models.members.findAll({
         order: [['level', 'DESC']],
-        limit: 10,
-        offset: 10 * (page - 1)
+        limit: 20
     });
 
     let leaderboard = "";
     leaderboard += " #  Name         Level\n";
-    let rank = 1 + (10*(page-1));
+
+    let rank = 1;
     const formatter = "`";
     let rankText = "";
+
     members.forEach((member) => {
         if(3 >= rank){
           rankText = "1000"  + rank;
@@ -77,7 +78,7 @@ export const createLeaderboard = async (sequelize: Sequelize, page: number): Pro
     const embed = new EmbedBuilder()
         .setTitle("⚔️ Leaderboard ⚔️")
         .setColor('#FFFFFF')
-        .setDescription("under maintenance ⛔")
-        .setFooter({text: `page ${page} • !levels [page]`});
+        .setDescription(leaderboard);
+
     return embed;
 };
