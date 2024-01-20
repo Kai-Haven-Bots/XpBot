@@ -54,11 +54,11 @@ export const createExpCard = async ( sequelize: Sequelize, msgMember: GuildMembe
 export const createLeaderboard = async (sequelize: Sequelize, page: number): Promise<EmbedBuilder> => {
     const members = await sequelize.models.members.findAll({
         order: [['level', 'DESC']],
-        limit: 20
+        limit: 30
     });
 
     let leaderboard = "";
-    leaderboard += " #  Name         Level\n";
+    leaderboard += " --  Name         Level\n";
 
     let rank = 1;
     const formatter = "`";
@@ -70,7 +70,7 @@ export const createLeaderboard = async (sequelize: Sequelize, page: number): Pro
         }else{
             rankText = rank + "";
         }
-        leaderboard += ` ${rankText}. <@${member.get("userId")}> ${formatter}${member.get("level")}${formatter}\n`;
+        leaderboard += `${rankText}. <@${member.get("userId")}> ${formatter}${member.get("level")}${formatter}\n`;
         rank++;
     });
     leaderboard = leaderboard.replace("10001.", "🥇").replace("10002.", "🥈").replace("10003.", "🥉");
